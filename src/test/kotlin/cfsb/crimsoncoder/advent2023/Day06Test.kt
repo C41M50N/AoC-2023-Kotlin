@@ -37,7 +37,7 @@ class Day06Test {
         @Test
         fun answer() {
             val answer = Day06(resourceAsText("day06.txt")).solveP2()
-            assertThat(answer).isEqualTo(0)
+            assertThat(answer).isEqualTo(28973936L)
         }
     }
 }

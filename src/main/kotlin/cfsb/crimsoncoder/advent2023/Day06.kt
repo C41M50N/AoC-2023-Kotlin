@@ -1,90 +1,66 @@
 package cfsb.crimsoncoder.advent2023
 
-import kotlin.math.ceil
-import kotlin.math.floor
+import kotlin.time.Duration
 
-class Day06(private val input: String) {
+class Day06(input: String) {
+    private val races = parseRaces(input)
 
     fun solveP1(): Long {
-        val races = parseInput(input)
-        return races.fold(1) { total, race -> total * race.getNumberOfWinningConfigs() }
+        // for each race, simulate on hold times from 1 to record distance,
+        // counting how many simulations are successful
+        return races.map { race ->
+            (1..race.duration).count { holdTime -> race.simulate(holdTime) }
+        }.reduce(Int::times).toLong()
     }
+
+    private val race = parseRace(input)
 
     fun solveP2(): Long {
-        val race = parseInput2(input)
-        return race.getNumberOfWinningConfigs()
+        return (1..race.duration).count { holdTime -> race.simulate(holdTime) }.toLong()
     }
 
-    private fun parseInput(input: String): List<Race> {
-        val times = input
-            .trim()
-            .lines()[0]
-            .substringAfter("Time: ")
-            .trim()
-            .split(" ")
-            .filter { it.isNotEmpty() }
-            .map { it.trim().toLong() }
+    private fun parseRaces(input: String): List<Race> {
+        val times = input.trim().lines().first()
+            .substringAfter("Time:").trim()
+            .split(" ").filter { it.isNotBlank() }
+            .map { it.toLong() }
 
-        val distances = input
-            .trim()
-            .lines()[1]
-            .substringAfter("Distance: ")
-            .trim()
-            .split(" ")
-            .filter { it.isNotEmpty() }
-            .map { it.trim().toLong() }
+        val distances = input.trim().lines()[1]
+            .substringAfter("Distance:").trim()
+            .split(" ").filter { it.isNotBlank() }
+            .map { it.toLong() }
 
-        return times.mapIndexed { index, time -> Race(time, distances[index]) }
+        return times.zip(distances).map { (time, distance) -> Race(time, distance) }
     }
 
-    private fun parseInput2(input: String): Race {
-        val time = input
-            .trim()
-            .lines()[0]
-            .substringAfter("Time: ")
-            .trim()
-            .replace(" ", "")
-            .toLong()
+    private fun parseRace(input: String): Race {
+        val time = input.trim().lines().first()
+            .substringAfter("Time:").trim()
+            .split(" ").filter { it.isNotBlank() }
+            .joinToString("").toLong()
 
-        val distance = input
-            .trim()
-            .lines()[1]
-            .substringAfter("Distance: ")
-            .trim()
-            .replace(" ", "")
-            .toLong()
+        val distance = input.trim().lines()[1]
+            .substringAfter("Distance:").trim()
+            .split(" ").filter { it.isNotBlank() }
+            .joinToString("").toLong()
 
         return Race(time, distance)
     }
 }
 
 private data class Race(
-    val timeLimit: Long, // a race lasts `timeLimit` milliseconds
-    val distanceRecord: Long
-    ) {
-
-    private fun getDistance(buttonPressTime: Long): Long {
-        var distance = 0L
-        var timeRemaining = timeLimit - buttonPressTime
-        while (timeRemaining > 0) {
-            distance += buttonPressTime
-            timeRemaining--
-        }
-        return distance
-    }
-
-    fun getNumberOfWinningConfigs(): Long {
-        var count = 0L
-        val tolerance = ceil(timeLimit * 0.001).toLong()
-        val midpoint = floor(timeLimit / 2.0).toLong()
-        val left = midpoint - tolerance
-        val right = midpoint + tolerance
-        for (buttonPressTime in left..right) {
-            if (this.getDistance(buttonPressTime) > distanceRecord) {
-                count++
-            }
-        }
-        return count
+    val duration: Long,
+    val recordDistance: Long
+) {
+    fun simulate(holdTime: Long): Boolean {
+        return ((duration - holdTime) * holdTime) > recordDistance
     }
 }
 
+// race duration = 7
+// hold time -> distance
+// 2 -> (7-2)*2 = 10
+// 3 -> (7-3)*3 = 12
+// 4 -> (7-4)*4 = 12
+// 5 -> (7-5)*5 = 10
+// 6 -> (7-6)*6 = 6
